@@ -1,4 +1,8 @@
 {
   "name": "rid-ioc",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "author": {
+    "name": "Kareem Elbahrawy",
+    "email": "kareem3d.a@gmail.com"
+  }
 }
