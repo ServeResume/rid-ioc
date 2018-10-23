@@ -1,25 +1,29 @@
 // Registered
-const registered = {
-  callables: {},
-  singletons: {},
-  instances: {},
-};
+if (!global.REGISTERED_IOC) {
+  global.REGISTERED_IOC = {
+    callables: {},
+    singletons: {},
+    instances: {},
+  };
+}
 
 // Resolved
-const resolved = {};
+if (!global.RESOLVED_IOC) {
+  global.RESOLVED_IOC = {};
+}
 
 function same(newName, oldName) {
-  if (oldName in resolved) {
-    resolved[newName] = resolved[oldName];
+  if (oldName in global.RESOLVED_IOC) {
+    global.RESOLVED_IOC[newName] = global.RESOLVED_IOC[oldName];
   }
-  if (oldName in registered.callables) {
-    registered.callables[newName] = registered.callables[oldName];
+  if (oldName in global.REGISTERED_IOC.callables) {
+    global.REGISTERED_IOC.callables[newName] = global.REGISTERED_IOC.callables[oldName];
   }
-  if (oldName in registered.singletons) {
-    registered.singletons[newName] = registered.singletons[oldName];
+  if (oldName in global.REGISTERED_IOC.singletons) {
+    global.REGISTERED_IOC.singletons[newName] = global.REGISTERED_IOC.singletons[oldName];
   }
-  if (oldName in registered.instances) {
-    registered.instances[newName] = registered.instances[oldName];
+  if (oldName in global.REGISTERED_IOC.instances) {
+    global.REGISTERED_IOC.instances[newName] = global.REGISTERED_IOC.instances[oldName];
   }
 }
 
@@ -27,7 +31,7 @@ function singleton(name, dependencies, classType) {
   if (! classType) {
     throw new Error(`You are trying to register an undefined singleton: ${name}`);
   }
-  registered.singletons[name] = {
+  global.REGISTERED_IOC.singletons[name] = {
     dependencies,
     classType,
   };
@@ -37,7 +41,7 @@ function callable(name, dependencies, func) {
   if (typeof func !== 'function') {
     throw new Error(`You are trying to register a non callable: ${name}`);
   }
-  registered.callables[name] = {
+  global.REGISTERED_IOC.callables[name] = {
     dependencies,
     func,
   };
@@ -47,14 +51,14 @@ function instance(name, dependencies, classType) {
   if (! classType) {
     throw new Error(`You are trying to register an undefined instance: ${name}`);
   }
-  registered.instances[name] = {
+  global.REGISTERED_IOC.instances[name] = {
     dependencies,
     classType,
   };
 }
 
 function value(name, value) {
-  resolved[name] = value;
+  global.RESOLVED_IOC[name] = value;
 }
 
 function resolveDependencies(dependencies, callers = []) {
@@ -71,7 +75,7 @@ function resolveDependencies(dependencies, callers = []) {
 }
 
 function resolveCallable(name, callers) {
-  const callable = registered.callables[name];
+  const callable = global.REGISTERED_IOC.callables[name];
 
   return resolveDependencies(callable.dependencies, [...callers, name])
     .then((args) => {
@@ -80,7 +84,7 @@ function resolveCallable(name, callers) {
 }
 
 function resolveClassInstance(name, callers) {
-  const instance = registered.singletons[name];
+  const instance = global.REGISTERED_IOC.singletons[name];
 
   return resolveDependencies(instance.dependencies, [...callers, name])
     .then((args) => {
@@ -91,18 +95,18 @@ function resolveClassInstance(name, callers) {
 function resolve(name, callers = []) {
   try {
     // @TODO add maximum call stack handling
-    if (!(name in resolved)) {
+    if (!(name in global.RESOLVED_IOC)) {
 
-      if (name in registered.callables) {
-        resolved[name] = resolveCallable(name, callers);
+      if (name in global.REGISTERED_IOC.callables) {
+        global.RESOLVED_IOC[name] = resolveCallable(name, callers);
       }
 
-      else if (name in registered.singletons) {
+      else if (name in global.REGISTERED_IOC.singletons) {
         // Resolve and save so we use the same instance again
-        resolved[name] = resolveClassInstance(name, callers);
+        global.RESOLVED_IOC[name] = resolveClassInstance(name, callers);
       }
 
-      else if (name in registered.instances) {
+      else if (name in global.REGISTERED_IOC.instances) {
         // Don't save because every time we will create a new instance
         return resolveClassInstance(name, callers);
       }
@@ -112,7 +116,7 @@ function resolve(name, callers = []) {
       }
     }
 
-    return Promise.resolve(resolved[name]);
+    return Promise.resolve(global.RESOLVED_IOC[name]);
   } catch(err) {
     return Promise.reject(err);
   }
